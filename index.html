@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drop Ball</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+            font-family: 'Press Start 2P', cursive;
+        }
+        canvas {
+            border: 6px solid black;
+            max-width: 100%;
+            max-height: 80vh;
+        }
+        h1 {
+            margin-bottom: 20px;
+            font-size: 4vw;
+        }
+        #signature {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Drop Ball</h1>
+    <canvas id="gameCanvas"></canvas>
+    <div id="signature">By Harsh Patel</div>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Set canvas size based on window size
+        function setCanvasSize() {
+            const maxWidth = window.innerWidth * 0.9;
+            const maxHeight = window.innerHeight * 0.7;
+            const aspectRatio = 300 / 500;
+
+            let width = maxWidth;
+            let height = width / aspectRatio;
+
+            if (height > maxHeight) {
+                height = maxHeight;
+                width = height * aspectRatio;
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+        }
+
+        setCanvasSize();
+        window.addEventListener('resize', setCanvasSize);
+
+        const BALL_SIZES = [10, 20, 30, 40, 50];
+        const BALL_COLORS = ['#FF8C4B', '#4BA9FF', '#FF4B4B', '#9AFF4B', '#BB4BFF'];
+
+        let currentBall = null;
+        let droppedBalls = [];
+        let isDropping = false;
+
+        function createNewBall() {
+            const sizeIndex = Math.floor(Math.random() * BALL_SIZES.length);
+            const size = BALL_SIZES[sizeIndex] * (canvas.width / 300);
+            currentBall = {
+                x: canvas.width / 2,
+                y: size,
+                size: size,
+                color: BALL_COLORS[sizeIndex],
+                type: sizeIndex,
+                vx: 0,
+                vy: 0
+            };
+        }
+
+        function drawBall(ball) {
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.size, 0, Math.PI * 2);
+            ctx.fillStyle = ball.color;
+            ctx.fill();
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.closePath();
+
+            // Add retro style pixel effect
+            for (let i = 0; i < 5; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const distance = Math.random() * ball.size * 0.8;
+                const x = ball.x + Math.cos(angle) * distance;
+                const y = ball.y + Math.sin(angle) * distance;
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                ctx.fillRect(x, y, 2, 2);
+            }
+        }
+
+        function update() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (isDropping) {
+                currentBall.vy += 0.4 * (canvas.height / 500); // Gravity
+                currentBall.y += currentBall.vy;
+                currentBall.x += currentBall.vx;
+
+                if (currentBall.y + currentBall.size > canvas.height) {
+                    currentBall.y = canvas.height - currentBall.size;
+                    currentBall.vy *= -0.4; // Bounce
+                    currentBall.vx *= 0.8; // Friction
+                }
+
+                if (currentBall.x - currentBall.size < 0 || currentBall.x + currentBall.size > canvas.width) {
+                    currentBall.vx *= -1; // Bounce off walls
+                    currentBall.x = Math.max(currentBall.size, Math.min(canvas.width - currentBall.size, currentBall.x));
+                }
+
+                if (Math.abs(currentBall.vy) < 0.1 * (canvas.height / 500) && currentBall.y + currentBall.size > canvas.height - 1) {
+                    droppedBalls.push(currentBall);
+                    isDropping = false;
+                    createNewBall();
+                }
+            }
+
+            droppedBalls.forEach(ball => {
+                ball.vy += 0.2 * (canvas.height / 500); // Gravity
+                ball.y += ball.vy;
+                ball.x += ball.vx;
+
+                if (ball.y + ball.size > canvas.height) {
+                    ball.y = canvas.height - ball.size;
+                    ball.vy *= -0.6; // Bounce
+                    ball.vx *= 0.8; // Friction
+                }
+
+                if (ball.x - ball.size < 0 || ball.x + ball.size > canvas.width) {
+                    ball.vx *= -1; // Bounce off walls
+                    ball.x = Math.max(ball.size, Math.min(canvas.width - ball.size, ball.x));
+                }
+
+                drawBall(ball);
+            });
+
+            if (currentBall) {
+                drawBall(currentBall);
+            }
+
+            checkCollisions();
+
+            requestAnimationFrame(update);
+        }
+
+        function checkCollisions() {
+            for (let i = 0; i < droppedBalls.length; i++) {
+                for (let j = i + 1; j < droppedBalls.length; j++) {
+                    const dx = droppedBalls[i].x - droppedBalls[j].x;
+                    const dy = droppedBalls[i].y - droppedBalls[j].y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance < droppedBalls[i].size + droppedBalls[j].size) {
+                        // Collision response
+                        let nx = dx / distance;
+                        let ny = dy / distance;
+                        let p = 2 * (droppedBalls[i].vx * nx + droppedBalls[i].vy * ny - droppedBalls[j].vx * nx - droppedBalls[j].vy * ny) / (droppedBalls[i].size + droppedBalls[j].size);
+                        
+                        // Only bounce if the balls are different colors
+                        if (droppedBalls[i].type !== droppedBalls[j].type) {
+                            droppedBalls[i].vx -= p * droppedBalls[j].size * nx;
+                            droppedBalls[i].vy -= p * droppedBalls[j].size * ny;
+                            droppedBalls[j].vx += p * droppedBalls[i].size * nx;
+                            droppedBalls[j].vy += p * droppedBalls[i].size * ny;
+                        }
+
+                        // Separate overlapping balls
+                        const overlap = 0.5 * (distance - droppedBalls[i].size - droppedBalls[j].size);
+                        droppedBalls[i].x -= overlap * (droppedBalls[i].x - droppedBalls[j].x) / distance;
+                        droppedBalls[i].y -= overlap * (droppedBalls[i].y - droppedBalls[j].y) / distance;
+                        droppedBalls[j].x += overlap * (droppedBalls[i].x - droppedBalls[j].x) / distance;
+                        droppedBalls[j].y += overlap * (droppedBalls[i].y - droppedBalls[j].y) / distance;
+
+                        // Merge balls if they are of the same type
+                        if (droppedBalls[i].type === droppedBalls[j].type && droppedBalls[i].type < 4) {
+                            const newType = droppedBalls[i].type + 1;
+                            const newBall = {
+                                x: (droppedBalls[i].x + droppedBalls[j].x) / 2,
+                                y: (droppedBalls[i].y + droppedBalls[j].y) / 2,
+                                size: BALL_SIZES[newType] * (canvas.width / 300),
+                                color: BALL_COLORS[newType],
+                                type: newType,
+                                vx: (droppedBalls[i].vx + droppedBalls[j].vx) / 2,
+                                vy: (droppedBalls[i].vy + droppedBalls[j].vy) / 2
+                            };
+                            droppedBalls.splice(j, 1);
+                            droppedBalls.splice(i, 1);
+                            droppedBalls.push(newBall);
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (!currentBall) return;
+
+            const moveDistance = canvas.width / 30;
+
+            if (e.key === 'ArrowLeft' && currentBall.x > currentBall.size) {
+                currentBall.x -= moveDistance;
+            } else if (e.key === 'ArrowRight' && currentBall.x < canvas.width - currentBall.size) {
+                currentBall.x += moveDistance;
+            }
+        });
+
+        // Add click event listener to release the ball
+        canvas.addEventListener('click', () => {
+            if (!isDropping && currentBall) {
+                isDropping = true;
+                currentBall.vy = canvas.height / 500; // Initial downward velocity
+            }
+        });
+
+        createNewBall();
+        update();
+    </script>
+</body>
+</html>

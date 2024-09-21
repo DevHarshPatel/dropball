@@ -157,18 +157,18 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             if (isDropping) {
-                currentBall.vy += 0.4 * (canvas.height / 500); // Gravity
+                currentBall.vy += 0.2 * (canvas.height / 500); // Gravity
                 currentBall.y += currentBall.vy;
                 currentBall.x += currentBall.vx;
 
                 if (currentBall.y + currentBall.size > canvas.height) {
                     currentBall.y = canvas.height - currentBall.size;
                     currentBall.vy *= -0.4; // Bounce
-                    currentBall.vx *= 0.8; // Friction
+                    currentBall.vx *= 1; // Friction
                 }
 
                 if (currentBall.x - currentBall.size < 0 || currentBall.x + currentBall.size > canvas.width) {
-                    currentBall.vx *= -1; // Bounce off walls
+                    currentBall.vx *= -0.5; // Bounce off walls
                     currentBall.x = Math.max(currentBall.size, Math.min(canvas.width - currentBall.size, currentBall.x));
                 }
 

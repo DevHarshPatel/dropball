@@ -31,19 +31,68 @@
             right: 10px;
             font-size: 12px;
         }
+        #gameContainer {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .arrow {
+            width: 50px;
+            height: 30px;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        #leftArrow {
+            margin-right: 10px;
+        }
+        #rightArrow {
+            margin-left: 10px;
+        }
+        #scoreDisplay {
+            font-size: 24px;
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
     <h1>Drop Ball</h1>
-    <canvas id="gameCanvas"></canvas>
+    <div id="scoreDisplay">Score: 0</div>
+    <div id="gameContainer">
+        <svg id="leftArrow" class="arrow" width="50" height="30" viewBox="0 0 499 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M499 100H399V200H499V100Z" fill="black"/>
+            <path d="M399 100H299V200H399V100Z" fill="black"/>
+            <path d="M299 100H199V200H299V100Z" fill="black"/>
+            <path d="M299 0H199V100H299V0Z" fill="black"/>
+            <path d="M299 200H199V300H299V200Z" fill="black"/>
+            <path d="M199 50H99V150H199V50Z" fill="black"/>
+            <path d="M199 150H99V250H199V150Z" fill="black"/>
+            <path d="M100 100H0V200H100V100Z" fill="black"/>
+        </svg>
+        <canvas id="gameCanvas"></canvas>
+        <svg id="rightArrow" class="arrow" width="50" height="30" viewBox="0 0 500 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M0 100H100V200H0V100Z" fill="black"/>
+            <path d="M100 100H200V200H100V100Z" fill="black"/>
+            <path d="M200 100H300V200H200V100Z" fill="black"/>
+            <path d="M200 0H300V100H200V0Z" fill="black"/>
+            <path d="M200 200H300V300H200V200Z" fill="black"/>
+            <path d="M300 50H400V150H300V50Z" fill="black"/>
+            <path d="M300 150H400V250H300V150Z" fill="black"/>
+            <path d="M400 100H500V200H400V100Z" fill="black"/>
+        </svg>
+    </div>
     <div id="signature">By Harsh Patel</div>
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
+        const leftArrow = document.getElementById('leftArrow');
+        const rightArrow = document.getElementById('rightArrow');
+        const scoreDisplay = document.getElementById('scoreDisplay');
+
+        let score = 0;
 
         // Set canvas size based on window size
         function setCanvasSize() {
-            const maxWidth = window.innerWidth * 0.9;
+            const maxWidth = window.innerWidth * 0.7;
             const maxHeight = window.innerHeight * 0.7;
             const aspectRatio = 300 / 500;
 
@@ -62,7 +111,7 @@
         setCanvasSize();
         window.addEventListener('resize', setCanvasSize);
 
-        const BALL_SIZES = [10, 20, 30, 40, 50];
+        const BALL_SIZES = [10, 15, 25, 30, 35];
         const BALL_COLORS = ['#FF8C4B', '#4BA9FF', '#FF4B4B', '#9AFF4B', '#BB4BFF'];
 
         let currentBall = null;
@@ -131,18 +180,18 @@
             }
 
             droppedBalls.forEach(ball => {
-                ball.vy += 0.2 * (canvas.height / 500); // Gravity
+                ball.vy += 1 * (canvas.height / 500); // Gravity
                 ball.y += ball.vy;
                 ball.x += ball.vx;
 
                 if (ball.y + ball.size > canvas.height) {
                     ball.y = canvas.height - ball.size;
-                    ball.vy *= -0.6; // Bounce
+                    ball.vy *= 1; // Bounce
                     ball.vx *= 0.8; // Friction
                 }
 
                 if (ball.x - ball.size < 0 || ball.x + ball.size > canvas.width) {
-                    ball.vx *= -1; // Bounce off walls
+                    ball.vx *= -0.2; // Bounce off walls
                     ball.x = Math.max(ball.size, Math.min(canvas.width - ball.size, ball.x));
                 }
 
@@ -201,6 +250,12 @@
                             droppedBalls.splice(j, 1);
                             droppedBalls.splice(i, 1);
                             droppedBalls.push(newBall);
+                            
+                            // Update score
+                            const pointsEarned = (newType + 1) * 10; // Larger balls yield more points
+                            score += pointsEarned;
+                            updateScoreDisplay();
+                            
                             return;
                         }
                     }
@@ -208,15 +263,27 @@
             }
         }
 
-        document.addEventListener('keydown', (e) => {
+        function updateScoreDisplay() {
+            scoreDisplay.textContent = `Score: ${score}`;
+        }
+
+        function moveBall(direction) {
             if (!currentBall) return;
 
             const moveDistance = canvas.width / 30;
 
-            if (e.key === 'ArrowLeft' && currentBall.x > currentBall.size) {
+            if (direction === 'left' && currentBall.x > currentBall.size) {
                 currentBall.x -= moveDistance;
-            } else if (e.key === 'ArrowRight' && currentBall.x < canvas.width - currentBall.size) {
+            } else if (direction === 'right' && currentBall.x < canvas.width - currentBall.size) {
                 currentBall.x += moveDistance;
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') {
+                moveBall('left');
+            } else if (e.key === 'ArrowRight') {
+                moveBall('right');
             }
         });
 
@@ -227,6 +294,30 @@
                 currentBall.vy = canvas.height / 500; // Initial downward velocity
             }
         });
+
+        // Add touch events for mobile arrows
+        function handleArrowTouch(direction) {
+            moveBall(direction);
+            const arrow = direction === 'left' ? leftArrow : rightArrow;
+            arrow.style.transform = 'scale(0.9)';
+            setTimeout(() => {
+                arrow.style.transform = 'scale(1)';
+            }, 100);
+        }
+
+        leftArrow.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            handleArrowTouch('left');
+        });
+
+        rightArrow.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            handleArrowTouch('right');
+        });
+
+        // Add mouse events for desktop arrows
+        leftArrow.addEventListener('mousedown', () => handleArrowTouch('left'));
+        rightArrow.addEventListener('mousedown', () => handleArrowTouch('right'));
 
         createNewBall();
         update();

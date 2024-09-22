@@ -111,8 +111,8 @@
         setCanvasSize();
         window.addEventListener('resize', setCanvasSize);
 
-        const BALL_SIZES = [10, 15, 25, 30, 35];
-        const BALL_COLORS = ['#FF8C4B', '#4BA9FF', '#FF4B4B', '#9AFF4B', '#BB4BFF'];
+        const BALL_SIZES = [10, 15, 25, 30, 35, 40];
+        const BALL_COLORS = ['#FF8C4B', '#4BA9FF', '#FF4B4B', '#9AFF4B', '#BB4BFF', '#FF4BC2'];
 
         let currentBall = null;
         let droppedBalls = [];
@@ -157,18 +157,18 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             if (isDropping) {
-                currentBall.vy += 0.2 * (canvas.height / 500); // Gravity
+                currentBall.vy += 0.4 * (canvas.height / 500); // Gravity
                 currentBall.y += currentBall.vy;
                 currentBall.x += currentBall.vx;
 
                 if (currentBall.y + currentBall.size > canvas.height) {
                     currentBall.y = canvas.height - currentBall.size;
                     currentBall.vy *= -0.4; // Bounce
-                    currentBall.vx *= 1; // Friction
+                    currentBall.vx *= 0.8; // Friction
                 }
 
                 if (currentBall.x - currentBall.size < 0 || currentBall.x + currentBall.size > canvas.width) {
-                    currentBall.vx *= -0.5; // Bounce off walls
+                    currentBall.vx *= -1; // Bounce off walls
                     currentBall.x = Math.max(currentBall.size, Math.min(canvas.width - currentBall.size, currentBall.x));
                 }
 
@@ -180,13 +180,13 @@
             }
 
             droppedBalls.forEach(ball => {
-                ball.vy += 1 * (canvas.height / 500); // Gravity
+                ball.vy += 0.2 * (canvas.height / 500); // Gravity
                 ball.y += ball.vy;
                 ball.x += ball.vx;
 
                 if (ball.y + ball.size > canvas.height) {
                     ball.y = canvas.height - ball.size;
-                    ball.vy *= 1; // Bounce
+                    ball.vy *= -0.6; // Bounce
                     ball.vx *= 0.8; // Friction
                 }
 
